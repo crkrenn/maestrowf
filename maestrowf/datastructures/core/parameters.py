@@ -39,6 +39,8 @@ from collections import OrderedDict
 import logging
 import re
 
+# from maestrowf.utils import float_format
+
 logger = logging.getLogger(__name__)
 
 
@@ -52,7 +54,7 @@ class Combination(object):
     parameters is VALID.
     """
 
-    def __init__(self, token="$"):
+    def __init__(self, token="$", dir_float_format=['{:.2f}','{:.2e}']):
         """
         Initialize an empty Combination class.
 
@@ -80,6 +82,7 @@ class Combination(object):
         self._labels = OrderedDict()
         self._names = {}
         self._token = token
+        self.dir_float_format = dir_float_format
 
     def add(self, key, name, value, label):
         """
@@ -113,6 +116,9 @@ class Combination(object):
 
         :returns: A string representing the combination.
         """
+        result = ".".join(self._labels.values())
+        logger.info(f"DEBUG combo__str__: {result}")
+        return result
         return ".".join(self._labels.values())
 
     def get_param_string(self, params):
@@ -125,8 +131,9 @@ class Combination(object):
         combo_str = []
         for item in sorted(params):
             var = "{}({}.label)".format(self._token, item)
+            logger.info(f"DEBUG var: {var}")
             combo_str.append(self._labels[var])
-
+        logger.info(f"DEBUG combo_str: {combo_str}")
         return ".".join(combo_str)
 
     def apply(self, item):
@@ -213,7 +220,8 @@ class ParameterGenerator:
     4. Profit.
     """
 
-    def __init__(self, token="$", ltoken="%%"):
+    def __init__(self, token="$", ltoken="%%", 
+                 dir_float_format=['{:.2f}','{:.2e}']):
         """
         Initialize an empty ParameterGenerator object.
 
@@ -240,6 +248,7 @@ class ParameterGenerator:
         self.names = {}
         self.label_token = ltoken
         self.token = token
+        self.dir_float_format = dir_float_format
 
         self.length = 0
 
@@ -307,15 +316,37 @@ class ParameterGenerator:
 
         :returns: A generator with all combinations of parameters.
         """
+        def float_format(float, format_list):
+            """
+            Return float as string using format_list.
+            
+            format_list, for example (['{:.2f}','{:.2e}']),
+            contains "".format() style format strings for 
+            numbers with small exponents and for numbers with
+            large exponents.
+            """
+            float_string = "{}".format(float)
+            if float_string.find("e") > -1:
+                formatted_string = format_list[1].format(float)
+            else:
+                formatted_string = format_list[0].format(float)
+            return formatted_string
+
         for i in range(0, self.length):
-            combo = Combination()
+            combo = Combination(dir_float_format=self.dir_float_format)
             for key in self.parameters.keys():
                 pvalue = self.parameters[key][i]
                 if isinstance(self.labels[key], list):
+                    logger.info(f"DEBUG pvalue2 {pvalue}")
                     tlabel = self.labels[key][i]
                 else:
+                    pvalue_str = str(pvalue)
+                    if type(pvalue) == float:
+                        pvalue_str = float_format(pvalue, self.dir_float_format)
+                    logger.info(f"DEBUG pvalue3 {pvalue_str}")
                     tlabel = self.labels[key].replace(self.label_token,
-                                                      str(pvalue))
+                                                      pvalue_str)
+                logger.info(f"DEBUG tlabel {tlabel}")
                 name = self.names[key]
                 combo.add(key, name, pvalue, tlabel)
             yield combo

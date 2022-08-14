@@ -193,7 +193,8 @@ def run_study(args):
     LOGGER.debug("DEBUG Logging Level -- Enabled")
     # Load the Specification
     try:
-        spec = YAMLSpecification.load_specification(args.specification)
+        spec = YAMLSpecification.load_specification(
+            args.specification, dir_float_format=args.dir_float_format)
     except jsonschema.ValidationError as e:
         LOGGER.error(e.message)
         sys.exit(1)
@@ -274,7 +275,8 @@ def run_study(args):
 
     # Setup the study.
     study = Study(spec.name, spec.description, studyenv=environment,
-                  parameters=parameters, steps=steps, out_path=output_path)
+                  parameters=parameters, steps=steps, out_path=output_path,
+                  dir_float_format=args.dir_float_format)
 
     # Check if the submission attempts is greater than 0:
     if args.attempts < 1:
@@ -421,7 +423,11 @@ def setup_argparser():
                      help="Enable hashing of subdirectories in parameterized "
                      "studies (NOTE: breaks commands that use parameter labels"
                      " to search directories). [Default: %(default)s]")
-
+    run.add_argument("--dir-float-format", nargs=2, 
+                     metavar=('(small-exponent-format)', '(large-exponent-format)'),
+                     default=['{:.2f}','{:.2e}'],
+                     help=("Format for float parameters when used in directory "
+                     "names [Default: %(default)s]."))
     prompt_opts = run.add_mutually_exclusive_group()
     prompt_opts.add_argument(
         "-n", "--autono", action="store_true", default=False,

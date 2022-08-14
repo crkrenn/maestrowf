@@ -194,7 +194,8 @@ class Study(DAG, PickleInterface):
     """
 
     def __init__(self, name, description,
-                 studyenv=None, parameters=None, steps=None, out_path="./"):
+                 studyenv=None, parameters=None, steps=None, out_path="./",
+                 dir_float_format=['{:.2f}','{:.2e}']):
         """
         Study object used to represent the full workflow of a study.
 

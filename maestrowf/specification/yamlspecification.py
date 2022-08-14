@@ -91,18 +91,20 @@ class YAMLSpecification(Specification):
         self.globals = {}
 
     @classmethod
-    def load_specification(cls, path):
+    def load_specification(cls, path, dir_float_format=['{:.2f}','{:.2e}']):
         """
         Load a study specification.
 
         :param path: Path to a study specification.
         :returns: A specification object containing the information from path.
         """
+        cls.dir_float_format=dir_float_format
         logger.info("Loading specification -- path = %s", path)
         try:
             # Load the YAML spec from the file.
             with open(path, "r") as data:
-                specification = cls.load_specification_from_stream(data)
+                specification = cls.load_specification_from_stream(
+                    data, dir_float_format=dir_float_format)
 
         except Exception as e:
             logger.exception(e.args)
@@ -113,7 +115,8 @@ class YAMLSpecification(Specification):
         return specification
 
     @classmethod
-    def load_specification_from_stream(cls, stream):
+    def load_specification_from_stream(cls, stream,
+            dir_float_format=['{:.2f}','{:.2e}']):
         """
         Load a study specification.
 
@@ -121,7 +124,7 @@ class YAMLSpecification(Specification):
         :returns: A specification object containing the information from the
                   passed stream.
         """
-
+        cls.dir_float_format=dir_float_format
         try:
             spec = yaml.load(stream, yaml.FullLoader)
         except AttributeError:
@@ -576,7 +579,7 @@ class YAMLSpecification(Specification):
 
         :returns: A ParameterGenerator with data from the specification.
         """
-        params = ParameterGenerator()
+        params = ParameterGenerator(dir_float_format=self.dir_float_format)
         for key, value in self.globals.items():
             if "name" not in value:
                 params.add_parameter(key, value["values"], value["label"])
