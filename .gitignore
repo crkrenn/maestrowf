@@ -40,3 +40,4 @@ Pipfile.lock
 
 #pycharm
 .idea/
+venv*

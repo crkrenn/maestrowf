@@ -3,16 +3,16 @@
   "Trivy": {
     "Version": "0.70.0"
   },
-  "ReportID": "019dd5a5-462d-79d5-a7e6-4a11fda8f656",
-  "CreatedAt": "2026-04-28T12:51:11.661645811-07:00",
-  "ArtifactID": "sha256:fc5a3f76e0b9f3ff9ac98ab9ec3041882c4908399a78a11e94025f6659b8dff3",
-  "ArtifactName": ".",
+  "ReportID": "019dfdcf-c8d5-7763-b59c-2f14811fecf8",
+  "CreatedAt": "2026-05-06T15:02:26.261485669Z",
+  "ArtifactID": "sha256:72a746b44dfcb672db3aba96020b69cd1956c8837ea6d2dd8355c5b039650db3",
+  "ArtifactName": "maestrowf",
   "ArtifactType": "repository",
   "Metadata": {
-    "RepoURL": "git@github.com:crkrenn/maestrowf.git",
+    "RepoURL": "https://github.com/crkrenn/maestrowf.git",
     "Branch": "feature/crkrenn/bump_python_packages",
-    "Commit": "67df7d8e3453fa4e55b3697c664f8fb3acdda9dc",
-    "CommitMsg": "bumped python packages",
+    "Commit": "48d28e245baa012d72f16f6a589c54367517b7a9",
+    "CommitMsg": "added software scans",
     "Author": "Christopher R Krenn \u003ckrenn1@llnl.gov\u003e",
     "Committer": "Christopher R Krenn \u003ckrenn1@llnl.gov\u003e"
   },
