@@ -19,6 +19,8 @@ from maestrowf.interfaces import ScriptAdapterFactory
 from maestrowf.utils import create_parentdir, get_duration, \
     round_datetime_seconds
 
+from rich.console import Console
+console=Console()
 LOGGER = logging.getLogger(__name__)
 SOURCE = "_source"
 
@@ -83,6 +85,14 @@ class _StepRecord:
         if not self._params:
             self._params = {}
         return self._params
+
+    @property
+    def restart_limit(self):
+        return self._restart_limit
+
+    @restart_limit.setter
+    def restart_limit(self, new_restart_limit):
+        self._restart_limit = new_restart_limit
 
     def setup_workspace(self):
         """Initialize the record's workspace."""
@@ -306,6 +316,15 @@ class _StepRecord:
         """
         return self._num_restarts
 
+    def __rich_repr__(self):
+        """Implement more helpful string representation for debugging via rich"""
+        yield "step", self.step
+        yield "name", self.name
+        yield "workspace", self.workspace
+        yield "script", self.script
+        yield "params", self._params
+        yield "status", self.status
+
 
 class ExecutionGraph(DAG, PickleInterface):
     """
@@ -398,6 +417,27 @@ class ExecutionGraph(DAG, PickleInterface):
         # recreate it.
         if self._tmp_dir and not os.path.exists(self._tmp_dir):
             self._tmp_dir = tempfile.mkdtemp()
+
+    def update_throttle(self, new_submission_throttle):
+        self._submission_throttle = new_submission_throttle
+
+    def update_rlimit(self, new_restart_limit):
+        # subtree, _ = self.bfs_subtree(SOURCE)
+            
+        # update_subtree = [key for key in subtree
+        #                             if key != '_source']
+
+        for key in self.values.keys():
+            if key == SOURCE:
+                continue
+
+            # Get the step record to update
+            step_record = self.values[key]
+            LOGGER.debug("Updating restart limit from %d to %d for step '%s'",
+                         step_record.restart_limit,
+                         new_restart_limit,
+                         key)
+            step_record.restart_limit = new_restart_limit
 
     def add_step(self, name, step, workspace, restart_limit, params=None):
         """
@@ -688,7 +728,7 @@ class ExecutionGraph(DAG, PickleInterface):
 
     def _check_study_completion(self):
         # We cancelled, return True marking study as complete.
-        if self.is_canceled:
+        if self.is_canceled and not self.in_progress:
             LOGGER.info("Cancelled -- completing study.")
             return StudyStatus.CANCELLED
 
@@ -753,7 +793,7 @@ class ExecutionGraph(DAG, PickleInterface):
             # For the status of each currently in progress job, check its
             # state.
             cleanup_steps = set()  # Steps that are in progress showing failed.
-
+            cancel_steps = set()   # Steps that have dependencies to mark cancelled
             for name, status in job_status.items():
                 LOGGER.debug("Checking job '%s' with status %s.", name, status)
                 record = self.values[name]
@@ -841,11 +881,17 @@ class ExecutionGraph(DAG, PickleInterface):
                     LOGGER.info("Step '%s' was cancelled.", name)
                     self.in_progress.remove(name)
                     record.mark_end(State.CANCELLED)
+                    cancel_steps.update(self.bfs_subtree(name)[0])
 
             # Let's handle all the failed steps in one go.
             for node in cleanup_steps:
                 self.failed_steps.add(node)
                 self.values[node].mark_end(State.FAILED)
+
+            # Handle dependent steps that need cancelling
+            for node in cancel_steps:
+                self.cancelled_steps.add(node)
+                self.values[node].mark_end(State.CANCELLED)
 
         # Now that we've checked the statuses of existing jobs we need to make
         # sure dependencies haven't been met.
@@ -872,9 +918,9 @@ class ExecutionGraph(DAG, PickleInterface):
                     "Unfulfilled dependencies: %s",
                     self._dependencies[key])
 
-                s_completed = filter(
+                s_completed = list(filter(
                     lambda x: x in self.completed_steps,
-                    self._dependencies[key])
+                    self._dependencies[key]))
                 self._dependencies[key] = \
                     self._dependencies[key] - set(s_completed)
                 LOGGER.debug(

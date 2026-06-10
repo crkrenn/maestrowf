@@ -9,6 +9,12 @@ sample_output/
 # VSCode
 .vscode
 
+# Emacs backup files
+*~
+# Emacs auto-save files
+\#*#
+.#*
+
 # Doxygen output
 docs/html/
 
@@ -27,6 +33,8 @@ report.xml
 .hypothesis/
 .pytest_cache/
 
+# Temp test data
+tests/PYTEST_TEMP_DATA
 
 *.py[cod]
 __pycache__/
@@ -38,3 +46,6 @@ Pipfile.lock
 
 #pycharm
 .idea/
+
+# Temp changelog bits for the docs
+CHANGELOG_docs.md
